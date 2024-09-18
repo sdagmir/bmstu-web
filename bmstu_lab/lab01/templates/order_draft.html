@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Сформированная заявка{% endblock %}
+
+{% block content_body %}
+    <div class="order-container">
+        <h1 class="order-title">Сформированная заявка</h1>
+
+        <div class="order-details">
+            <h3>Вид косметики: уход за кожей</h3>
+
+            <div class="order-items">
+                {% for item in data %}
+                <div class="order-item">
+                    <div class="item-image">
+                        <img src="{{ item.img_path }}" alt="{{ item.title }}">
+                    </div>
+                    <div class="item-details">
+                        <h5>{{ item.title }} ({{ item.volume }}{{ item.unit }})</h5>
+                        <a href="{% url 'component' item.id %}" class="item-more">Подробнее</a>
+                    </div>
+                    <div class="item-quantity">
+                        <button class="qty-btn">-</button>
+                        <span>1</span>
+                        <button class="qty-btn">+</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ component.title }}{% endblock %}
+
+{% block content_body %}
+    <div class="component-detail">
+        <img src="{{ component.img_path }}" alt="{{ component.title }}" class="component-img">
+        <div class="component-info">
+            <h1>{{ component.title }}</h1>
+            <p>{{ component.description }}</p>
+            <p class="volume-info"><strong>Объем:</strong> {{ component.volume }} {{ component.unit }}</p>
+            <p class="price-info"><strong>Цена:</strong> {{ component.price }} руб.</p>
+        </div>
+    </div>
+{% endblock %}
+
