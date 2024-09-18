@@ -103,6 +103,7 @@ def components(request):
         'data': {
             'elements': filter_elements,
             'search_query': search_query,
+            'count': len(order_list),
             'request_id': 0
         }
     })
