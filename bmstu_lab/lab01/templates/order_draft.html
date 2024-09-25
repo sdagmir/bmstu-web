@@ -1,28 +1,33 @@
 {% extends 'base.html' %}
 
-{% block title %}Сформированная заявка{% endblock %}
+{% block title %}Косметическое средство{% endblock %}
 
 {% block content_body %}
     <div class="order-container">
-        <h1 class="order-title">Сформированная заявка</h1>
+        <h1 class="order-title">Состав косметического средства</h1>
 
         <div class="order-details">
-            <h3>Вид косметики: уход за кожей</h3>
+            <h3>Категория: скраб для тела</h3>
 
             <div class="order-items">
                 {% for item in data %}
-                <div class="order-item">
+                <div class="order-item">    
                     <div class="item-image">
                         <img src="{{ item.img_path }}" alt="{{ item.title }}">
                     </div>
                     <div class="item-details">
-                        <h5>{{ item.title }} ({{ item.volume }}{{ item.unit }})</h5>
+                        <h5>{{ item.title }}</h5>
                         <a href="{% url 'component' item.id %}" class="item-more">Подробнее</a>
                     </div>
                     <div class="item-quantity">
-                        <button class="qty-btn">-</button>
-                        <span>1</span>
-                        <button class="qty-btn">+</button>
+                        <label for="quantity-{{ item.id }}">Кол-во ({{ item.unit }}):</label>
+                        <input type="number" 
+                               id="quantity-{{ item.id }}" 
+                               name="quantity-{{ item.id }}" 
+                               min="1" 
+                               step="1" 
+                               value="30" 
+                               readonly>
                     </div>
                 </div>
                 {% endfor %}
@@ -30,4 +35,3 @@
         </div>
     </div>
 {% endblock %}
-
