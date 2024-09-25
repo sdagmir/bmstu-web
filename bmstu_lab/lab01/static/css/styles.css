@@ -222,16 +222,18 @@ header {
 
 .item-details {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
-    width: 100%; 
+    width: 100%;
+    gap: 300px;
 }
 
 .item-details h5 {
     margin: 0;
-    font-size: 16px;
+    font-size: 18px;
     color: #333;
     font-weight: 500;
+    width: 250px;
 }
 
 .item-details .item-more {
@@ -245,31 +247,25 @@ header {
     text-decoration: underline;
 }
 
-/* Кнопки для изменения количества товара */
 .item-quantity {
     display: flex;
     align-items: center;
-    margin-left: 600px;
+    justify-content: flex-end; /* Выровнять по правому краю */
+    gap: 10px; /* Отступ между label и input */
+    white-space: nowrap;
+    width: 150px; /* Можно регулировать по необходимости */
 }
 
-.qty-btn {
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 18px;
-    color: #333;
-    cursor: pointer;
+.item-quantity label {
+    font-size: 16px;
 }
 
-.qty-btn:hover {
-    background-color: #f4f4f4;
-}
-
-.item-quantity span {
-    margin: 0 10px;
-    font-size: 18px;
+.item-quantity input {
+    width: 60px;
+    padding: 5px;
+    text-align: center;
+    border-radius: 15px;
+    border: 2px solid #4BAD3B;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -321,3 +317,4 @@ header {
     font-weight: bold;
     margin-top: 20px;
 }
+
