@@ -54,7 +54,7 @@ ROOT_URLCONF = 'server_config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "lab01/templates"],
+        'DIRS': [BASE_DIR / "cosmetics/templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -117,7 +117,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    BASE_DIR / 'lab01/static',
+    BASE_DIR / 'cosmetics/static',
 ]
 
 # Default primary key field type
