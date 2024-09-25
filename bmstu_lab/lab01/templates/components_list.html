@@ -9,12 +9,12 @@
             <div class="search_bar">
                 <input type="text" name="q" placeholder="Поиск">
                 <button type="submit" id="search">
-                    <img src="http://127.0.0.1:9000/web-img/search.png" alt="Иконка поиска">
+                    <img src="{% static 'img/search.png' %}" alt="Иконка поиска">
                 </button>
             </div>
         </form>
         <div class="busket">
-            <a href="{% url 'request' data.request_id %}"><img src="http://127.0.0.1:9000/web-img/basket.png" alt="Корзина"></a>
+            <a href="{% url 'request' data.request_id %}"><img src="{% static 'img/busket.png' %}" alt="Корзина"></a>
             <span class="busket_count">{{data.count}}</span>
         </div>
     </div>

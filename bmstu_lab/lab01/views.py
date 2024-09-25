@@ -1,15 +1,11 @@
 from django.shortcuts import render
 from datetime import date
 
-MINIO_HOST = '127.0.0.1'
-MINIO_PORT = 9000
-MINIO_DIR = 'web-img'
-
 chemical_elements = [
     {
         'id': 0,
         'title': "Био-хелат",
-        'img_name': "0.png",
+        'img_path': "http://127.0.0.1:9000/web-img/0.png",
         'volume': 100,
         'unit': "мл",
         'price': 2950,
@@ -19,7 +15,7 @@ chemical_elements = [
     {
         'id': 1,
         'title': "L-аргинин",
-        'img_name': "1.png",
+        'img_path': "http://127.0.0.1:9000/web-img/1.png",
         'volume': 30,
         'unit': "г",
         'price': 340,
@@ -29,7 +25,7 @@ chemical_elements = [
     {
         'id': 2,
         'title': "Каприлилгликоль",
-        'img_name': "2.png",
+        'img_path': "http://127.0.0.1:9000/web-img/2.png",
         'volume': 100,
         'unit': "г",
         'price': 1600,
@@ -39,7 +35,7 @@ chemical_elements = [
     {
         'id': 3,
         'title': "Пентиленгликоль",
-        'img_name': "3.png",
+        'img_path': "http://127.0.0.1:9000/web-img/3.png",
         'volume': 50,
         'unit': "мл",
         'price': 890,
@@ -49,7 +45,7 @@ chemical_elements = [
     {
         'id': 4,
         'title': "Дипропиленгликоль",
-        'img_name': "4.png",
+        'img_path': "http://127.0.0.1:9000/web-img/4.png",
         'volume': 500,
         'unit': "мл",
         'price': 550,
@@ -62,7 +58,7 @@ order_list = [
     {
         'id': 2,
         'title': "Каприлилгликоль",
-        'img_name': "2.png",
+        'img_path': "http://127.0.0.1:9000/web-img/2.png",
         'volume': 100,
         'unit': "г",
         'price': 1600
@@ -70,7 +66,7 @@ order_list = [
     {
         'id': 1,
         'title': "L-аргинин",
-        'img_name': "1.png",
+        'img_path': "http://127.0.0.1:9000/web-img/1.png",
         'volume': 30,
         'unit': "г",
         'price': 340
@@ -78,7 +74,7 @@ order_list = [
     {
         'id': 3,
         'title': "Пентиленгликоль",
-        'img_name': "3.png",
+        'img_path': "http://127.0.0.1:9000/web-img/3.png",
         'volume': 50,
         'unit': "мл",
         'price': 890
@@ -94,10 +90,6 @@ def components(request):
         element for element in chemical_elements
         if element['title'].lower().startswith(search_query)
     ]
-# Формируем путь к изображениям для каждого элемента списка
-    for element in filter_elements:
-        element['img_path'] = f'http://{MINIO_HOST}:{
-            MINIO_PORT}/{MINIO_DIR}/{element["id"]}.png'
 # Рендерим html-шаблон, передавая данные
     return render(request, 'components_list.html', {
         'data': {
@@ -112,16 +104,10 @@ def components(request):
 def component(request, id):
     for component_data in chemical_elements:
         if component_data['id'] == id:
-            component_data['img_path'] = f'http://{MINIO_HOST}:{
-                MINIO_PORT}/{MINIO_DIR}/{component_data["img_name"]}'
             return render(request, 'component.html', {'component': component_data})
 
     return render(request, 'component.html')
 
 
 def request(request, id):
-    for component in order_list:
-        component['img_path'] = f'http://{MINIO_HOST}:{
-            MINIO_PORT}/{MINIO_DIR}/{component["img_name"]}'
-
     return render(request, 'order_draft.html', {'data': order_list})
