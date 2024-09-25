@@ -54,30 +54,21 @@ chemical_elements = [
     }
 ]
 
-order_list = [
+cosmetic_order = [
     {
-        'id': 2,
-        'title': "Каприлилгликоль",
-        'img_path': "http://127.0.0.1:9000/web-img/2.png",
-        'volume': 100,
-        'unit': "г",
-        'price': 1600
+        'id': 0,
+        'id_component': 2,
+        'dosage': 100
     },
     {
-        'id': 1,
-        'title': "L-аргинин",
-        'img_path': "http://127.0.0.1:9000/web-img/1.png",
-        'volume': 30,
-        'unit': "г",
-        'price': 340
+        'id': 0,
+        'id_component': 1,
+        'dosage': 70
     },
     {
-        'id': 3,
-        'title': "Пентиленгликоль",
-        'img_path': "http://127.0.0.1:9000/web-img/3.png",
-        'volume': 50,
-        'unit': "мл",
-        'price': 890
+        'id': 0,
+        'id_component': 3,
+        'dosage': 15
     }
 ]
 
@@ -95,8 +86,8 @@ def components(request):
         'data': {
             'elements': filter_elements,
             'search_query': search_query,
-            'count': len(order_list),
-            'request_id': 0
+            'count': len(cosmetic_order),
+            'formulation_id': 0
         }
     })
 
@@ -109,5 +100,19 @@ def component(request, id):
     return render(request, 'component.html')
 
 
-def request(request, id):
-    return render(request, 'order_draft.html', {'data': order_list})
+def cosmetic_composition(request, id):
+    detailed_cosmetic_order = [
+        {
+            'id': order['id'],
+            'id_component': order['id_component'],
+            'dosage': order['dosage'],
+            'title': component['title'],
+            'img_path': component['img_path'],
+            'unit': component['unit']
+        }
+        for order in cosmetic_order
+        for component in chemical_elements
+        if component['id'] == order['id_component']
+    ]
+
+    return render(request, 'order_draft.html', {'data': detailed_cosmetic_order})

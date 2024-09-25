@@ -6,5 +6,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.components, name='components'),
     path('component/<int:id>/', views.component, name='component'),
-    path('request/<int:id>/', views.request, name='request')
+    path('request/<int:id>/', views.cosmetic_composition,
+         name='cosmetic_composition')
 ]

@@ -14,7 +14,7 @@
             </div>
         </form>
         <div class="busket">
-            <a href="{% url 'request' data.request_id %}"><img src="{% static 'img/busket.png' %}" alt="Корзина"></a>
+            <a href="{% url 'cosmetic_composition' data.formulation_id %}"><img src="{% static 'img/busket.png' %}" alt="Корзина"></a>
             <span class="busket_count">{{data.count}}</span>
         </div>
     </div>

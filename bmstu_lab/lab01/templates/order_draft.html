@@ -17,16 +17,16 @@
                     </div>
                     <div class="item-details">
                         <h5>{{ item.title }}</h5>
-                        <a href="{% url 'component' item.id %}" class="item-more">Подробнее</a>
+                        <a href="{% url 'component' item.id_component %}" class="item-more">Подробнее</a>
                     </div>
                     <div class="item-quantity">
-                        <label for="quantity-{{ item.id }}">Кол-во ({{ item.unit }}):</label>
+                        <label for="quantity-{{ item.id_component }}">Кол-во ({{ item.unit }}):</label>
                         <input type="number" 
-                               id="quantity-{{ item.id }}" 
-                               name="quantity-{{ item.id }}" 
+                               id="quantity-{{ item.id_component }}" 
+                               name="quantity-{{ item.id_component }}" 
                                min="1" 
                                step="1" 
-                               value="30" 
+                               value="{{item.dosage}}" 
                                readonly>
                     </div>
                 </div>
