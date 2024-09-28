@@ -13,9 +13,14 @@
                 </button>
             </div>
         </form>
-        <div class="busket">
-            <a href="{% url 'cosmetic_composition' data.formulation_id %}"><img src="{% static 'img/busket.png' %}" alt="Корзина"></a>
-            <span class="busket_count">{{data.count}}</span>
+        <div class="busket {% if data.count == 0 %}inactive{% endif %}">
+            {% if data.count > 0 %}
+                <a href="{% url 'cosmetic_composition' data.formulation_id %}"><img src="{% static 'img/busket.png' %}" alt="Корзина"></a>
+                <span class="busket_count">{{ data.count }}</span>
+            {% else %}
+                <span><img src="{% static 'img/busket_null.png' %}" alt="Корзина"></span>
+            {% endif %}
+            
         </div>
     </div>
 {% endblock %}
@@ -30,6 +35,7 @@
                         <h5 class="card-title">{{ element.title }}</h5>
                         <p class="card-description">{{ element.short_description }}</p>
                         <p class="card-price">{{ element.volume }}{{ element.unit }} — {{ element.price }} руб.</p>
+                        <a href="{% url 'add_component' element.id %}" class="btn-add">Добавить</a>
                     </div>
                 </div>
             {% endfor %}

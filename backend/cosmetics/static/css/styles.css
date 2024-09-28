@@ -175,6 +175,25 @@ header {
     color: #4F9B53;
 }
 
+.btn-add {
+    background-color: #4F9B53; 
+    text-align: center;
+    color: white; 
+    border: none; 
+    border-radius: 5px; 
+    padding: 10px 15px; 
+    font-size: 16px; 
+    cursor: pointer; 
+    display: block; 
+    margin: 10px auto 0; 
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+}
+
+.btn-add:hover {
+    background-color: #3A7B3D; 
+}
+
 
 /* Контейнер для заявок */
 .order-container {
