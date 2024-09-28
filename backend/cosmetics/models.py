@@ -9,7 +9,7 @@ class ChemicalElement(models.Model):
     title = models.CharField(max_length=30, verbose_name="Название")
     img_path = models.CharField(
         max_length=255, verbose_name="Путь к изображению")
-    volume = models.FloatField(verbose_name="Объем")
+    volume = models.IntegerField(verbose_name="Объем")
     unit = models.CharField(max_length=10, verbose_name="Единица измерения")
     price = models.DecimalField(
         max_digits=10, decimal_places=2, verbose_name="Цена")
@@ -23,6 +23,7 @@ class ChemicalElement(models.Model):
     class Meta:
         verbose_name = "Химический элемент"
         verbose_name_plural = "Химические элементы"
+        db_table = 'chemical_element'
 
 
 # Модель для заявок на косметические средства
@@ -41,6 +42,8 @@ class CosmeticOrder(models.Model):
         choices=STATUS_CHOICES, default=1, verbose_name="Статус")
     date_created = models.DateTimeField(
         auto_now_add=True, verbose_name="Дата создания")
+    category = models.CharField(
+        max_length=50, verbose_name="Категория косметики", default="")
 
     def __str__(self):
         return f"Заказ №{self.pk} от {self.user.username}"
@@ -56,6 +59,7 @@ class CosmeticOrder(models.Model):
     class Meta:
         verbose_name = "Косметическая заявка"
         verbose_name_plural = "Косметические заявки"
+        db_table = 'cosmetic_order'
 
 
 # Модель для компонентов в заявке
@@ -72,3 +76,5 @@ class OrderComponent(models.Model):
     class Meta:
         verbose_name = "Компонент заявки"
         verbose_name_plural = "Компоненты заявки"
+        db_table = 'order_component'
+        unique_together = ('order', 'chemical_element')
