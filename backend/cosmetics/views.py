@@ -1,118 +1,67 @@
-from django.shortcuts import render
-from datetime import date
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.models import User
+from cosmetics.models import CosmeticOrder, OrderComponent, ChemicalElement
+from django.db.models import Q
 
-chemical_elements = [
-    {
-        'id': 0,
-        'title': "Био-хелат",
-        'img_path': "http://127.0.0.1:9000/web-img/0.png",
-        'volume': 100,
-        'unit': "мл",
-        'price': 2950,
-        'short_description': "Уникальный активный комплекс, созданный на основе ферментированных минералов: цинка, железа, кремния, меди и магния.",
-        'description': "Bio-Chelate — это уникальный активный комплекс, созданный на основе ферментированных минералов, таких как цинк, железо, кремний, медь и магний. Благодаря инновационной технологии ферментации, эти минералы преобразуются в биодоступную форму, которая легко усваивается кожей. Bio-Chelate подходит для всех типов кожи, включая чувствительную, и обладает многофункциональным действием, решая сразу несколько задач. Он питает и кондиционирует кожу, насыщая её необходимыми минералами и улучшая её состояние, укрепляет барьерную функцию, защищая кожу от агрессивных факторов окружающей среды, а также стимулирует процессы обновления клеток."
-    },
-    {
-        'id': 1,
-        'title': "L-аргинин",
-        'img_path': "http://127.0.0.1:9000/web-img/1.png",
-        'volume': 30,
-        'unit': "г",
-        'price': 340,
-        'short_description': "L-аргинин условно незаменимая аминокислота с основными свойствами. Входит в состав белков организма.",
-        'description': "L-аргинин — это условно незаменимая аминокислота, которая является важным компонентом белков организма. Он входит в состав коллагена кожи и кератина волос, участвует в ряде ключевых ферментативных реакций. L-аргинин улучшает микроциркуляцию, оказывает сосудорасширяющее действие и улучшает трофику тканей, а также является частью натурального увлажняющего фактора. В косметике он способствует синтезу коллагена, подтягивает кожу и уменьшает морщины, увлажняет, улучшает структуру волос, поддерживает их эластичность и прочность, а также улучшает питание волосяных фолликулов, стимулируя рост волос."
-    },
-    {
-        'id': 2,
-        'title': "Каприлилгликоль",
-        'img_path': "http://127.0.0.1:9000/web-img/2.png",
-        'volume': 100,
-        'unit': "г",
-        'price': 1600,
-        'short_description': "Один из самых широко распространённых многофункциональных компонентов в косметических средствах.",
-        'description': "Один из самых широко распространённых многофункциональных компонентов в косметических средствах оказывает разнообразное действие. Он защищает косметические продукты от порчи, увлажняет кожу, выступает в роли энхансера, увеличивает стабильность формул, улучшает сенсорные свойства и обладает кондиционирующим и смягчающим эффектом. Также компонент способствует более равномерному распределению пигментов и регулирует вязкость средств, обеспечивая защиту от микроорганизмов."
-    },
-    {
-        'id': 3,
-        'title': "Пентиленгликоль",
-        'img_path': "http://127.0.0.1:9000/web-img/3.png",
-        'volume': 50,
-        'unit': "мл",
-        'price': 890,
-        'short_description': "Новое зеленое поколение для натуральных рецептур, имеет сертификацию COSMOS, 100% органический, производится из сахарного тростника.",
-        'description': "Новое зеленое поколение для натуральных рецептур, сертифицированное COSMOS, 100% органическое и производимое из сахарного тростника, представляет собой отличный многофункциональный компонент для профессиональных рецептур. Он повышает эффективность рецептуры, продлевает срок годности продукта и может выступать как единственный консервант. Также обладает увлажняющими свойствами, улучшает тактильные характеристики средств, повышает стабильность эмульсий, улучшает распределение пигментов и повышает SPF продуктов. Кроме того, он улучшает водостойкость солнцезащитных средств и действует как солюбилизатор."
-    },
-    {
-        'id': 4,
-        'title': "Дипропиленгликоль",
-        'img_path': "http://127.0.0.1:9000/web-img/4.png",
-        'volume': 500,
-        'unit': "мл",
-        'price': 550,
-        'short_description': "Прекрасный растворитель для душистых веществ натурального и синтетического происхождения. Широко используется в парфюмерии.",
-        'description': "Этот компонент является отличным растворителем для душистых веществ как натурального, так и синтетического происхождения, и широко используется в парфюмерии. Он повышает стойкость парфюмерного продукта и смягчает его воздействие на кожу при добавлении в концентрации 5-10%. Также улучшает и ускоряет процесс вызревания парфюмерной композиции, легко смешивается со спиртом, маслом и водой, и служит основой для безспиртовых духов. Его применяют в аромадиффузорах с палочками. Это бесцветная, гигроскопичная жидкость без запаха, которая при растворении в воде выделяет тепло. Она нетоксична и используется в фармацевтической, пищевой и парфюмерной промышленности."
-    }
-]
 
-cosmetic_order = [
-    {
-        'id': 0,
-        'id_component': 2,
-        'dosage': 100
-    },
-    {
-        'id': 0,
-        'id_component': 1,
-        'dosage': 70
-    },
-    {
-        'id': 0,
-        'id_component': 3,
-        'dosage': 15
-    }
-]
+USER = User.objects.get(pk=1)
 
 
 def components(request):
     # Получаем данные из строки поиска
     search_query = request.GET.get('q', '').lower()
-# Формируем список отфильтрованных элементов по нашему запросу
-    filter_elements = [
-        element for element in chemical_elements
-        if element['title'].lower().startswith(search_query)
-    ]
-# Рендерим html-шаблон, передавая данные
+
+    # Получаем заявку пользователя в статусе черновик, если такая существует
+    draft_order = CosmeticOrder.objects.filter(
+        user=USER, status=CosmeticOrder.STATUS_CHOICES[0][0]).first()
+
+    # Фильтруем химические элементы по заголовку, начинающемуся с поискового запроса
+    filter_elements = ChemicalElement.objects.filter(
+        title__istartswith=search_query)
+
+    # Рендерим html-шаблон, передавая данные
     return render(request, 'components_list.html', {
         'data': {
             'elements': filter_elements,
             'search_query': search_query,
-            'count': len(cosmetic_order),
-            'formulation_id': 0
+            'count': draft_order.components.count() if draft_order else 0,
+            'formulation_id': draft_order.id if draft_order else 0
         }
     })
 
 
 def component(request, id):
-    for component_data in chemical_elements:
-        if component_data['id'] == id:
-            return render(request, 'component.html', {'component': component_data})
 
-    return render(request, 'component.html')
+    component_data = get_object_or_404(ChemicalElement, id=id)
+
+    return render(request, 'component.html', {'component': component_data})
 
 
-def cosmetic_composition(request, id):
-    detailed_cosmetic_order = [
-        {
-            'id': order['id'],
-            'id_component': order['id_component'],
-            'dosage': order['dosage'],
-            'title': component['title'],
-            'img_path': component['img_path'],
-            'unit': component['unit']
-        }
-        for order in cosmetic_order
-        for component in chemical_elements
-        if component['id'] == order['id_component']
-    ]
+def cosmetic_composition(request, request_id):
+
+    cosmetic_order = CosmeticOrder.objects.filter(
+        ~Q(status=CosmeticOrder.STATUS_CHOICES[0][0]), id=request_id).first()
+
+    if cosmetic_order is None:
+        detailed_cosmetic_order = []
+    else:
+        order_components = OrderComponent.objects.filter(
+            order=cosmetic_order).select_related('chemical_element')
+
+        detailed_cosmetic_order = [
+            {
+                'id': component.id,
+                'id_component': component.chemical_element.id,
+                'dosage': component.dosage,
+                'title': component.chemical_element.title,
+                'img_path': component.chemical_element.img_path,
+                'unit': component.chemical_element.unit
+            }
+            for component in order_components
+        ]
 
     return render(request, 'order_draft.html', {'data': detailed_cosmetic_order})
+
+
+def add_component(request, id):
+    pass
