@@ -3,35 +3,47 @@
 {% block title %}Косметическое средство{% endblock %}
 
 {% block content_body %}
-    <div class="order-container">
-        <h1 class="order-title">Состав косметического средства</h1>
+    <form method="post" action="{% url 'delete_cosmetic' data.id %}">
+        {% csrf_token %}
+        <div class="order-container">
+            <h1 class="order-title">Состав косметического средства</h1>
 
-        <div class="order-details">
-            <h3>Категория: скраб для тела</h3>
+            <div class="order-details">
+                <!-- Категория стала input text -->
+                <label for="category">Категория:</label>
+                <input type="text" id="category" name="category" value="{{ data.category }}" class="category-input" placeholder="Введите наименование">
 
-            <div class="order-items">
-                {% for item in data %}
-                <div class="order-item">    
-                    <div class="item-image">
-                        <img src="{{ item.img_path }}" alt="{{ item.title }}">
+                <div class="order-items">
+                    {% for item in data.details %}
+                    <div class="order-item">
+                        <div class="item-image">
+                            <img src="{{ item.img_path }}" alt="{{ item.title }}">
+                        </div>
+                        <div class="item-details">
+                            <h5>{{ item.title }}</h5>
+                            <a href="{% url 'component' item.id_component %}" class="item-more">Подробнее</a>
+                        </div>
+                        <div class="item-quantity">
+                            <label for="quantity-{{ item.id_component }}">Кол-во ({{ item.unit }}):</label>
+                            <input type="number" 
+                                id="quantity-{{ item.id_component }}" 
+                                name="quantity-{{ item.id_component }}" 
+                                min="1" 
+                                step="1" 
+                                value="{{item.dosage}}" 
+                                >
+                        </div>    
+                        <button type="submit" class="btn btn-danger" name="request_action" value="delete_component_{{item.id_component}}">Удалить</button>
                     </div>
-                    <div class="item-details">
-                        <h5>{{ item.title }}</h5>
-                        <a href="{% url 'component' item.id_component %}" class="item-more">Подробнее</a>
-                    </div>
-                    <div class="item-quantity">
-                        <label for="quantity-{{ item.id_component }}">Кол-во ({{ item.unit }}):</label>
-                        <input type="number" 
-                               id="quantity-{{ item.id_component }}" 
-                               name="quantity-{{ item.id_component }}" 
-                               min="1" 
-                               step="1" 
-                               value="{{item.dosage}}" 
-                               readonly>
-                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
+            </div>
+            
+            <div class="delete-button-container">
+                <button class="btn btn-danger" name="request_action" value="delete_cosmetic_composition">
+                    Удалить косметическое средство
+                </button>
             </div>
         </div>
-    </div>
+    </form>
 {% endblock %}

@@ -35,7 +35,10 @@
                         <h5 class="card-title">{{ element.title }}</h5>
                         <p class="card-description">{{ element.short_description }}</p>
                         <p class="card-price">{{ element.volume }}{{ element.unit }} — {{ element.price }} руб.</p>
-                        <a href="{% url 'add_component' element.id %}" class="btn-add">Добавить</a>
+                        <form method="post" action="{% url 'add_component'%}">
+                            {% csrf_token %}
+                            <button class="btn-add" name ="add_to_basket" value="{{ element.id }}">Добавить</button>
+                        </form>
                     </div>
                 </div>
             {% endfor %}
