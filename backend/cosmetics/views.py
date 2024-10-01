@@ -1,13 +1,17 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
+from django.db import connection
 from cosmetics.models import CosmeticOrder, OrderComponent, ChemicalElement
 from django.db.models import Q
 
 
-USER = User.objects.get(pk=1)
+USER = 1
 
 
 def components(request):
+    """
+    Отображение страницы со списком всех компонентов
+    """
     # Получаем данные из строки поиска
     search_query = request.GET.get('q', '').lower()
 
@@ -31,16 +35,20 @@ def components(request):
 
 
 def component(request, id):
-
+    """
+    Отображение страницы с подробным описанием выбранного элемента
+    """
     component_data = get_object_or_404(ChemicalElement, id=id)
 
     return render(request, 'component.html', {'component': component_data})
 
 
 def cosmetic_composition(request, request_id):
-
+    """
+    Отображение страницы косметического средства
+    """
     cosmetic_order = CosmeticOrder.objects.filter(
-        ~Q(status=CosmeticOrder.STATUS_CHOICES[0][0]), id=request_id).first()
+        ~Q(status=CosmeticOrder.STATUS_CHOICES[2][0]), id=request_id).first()
 
     if cosmetic_order is None:
         detailed_cosmetic_order = []
@@ -50,9 +58,7 @@ def cosmetic_composition(request, request_id):
 
         detailed_cosmetic_order = [
             {
-                'id': component.id,
                 'id_component': component.chemical_element.id,
-                'dosage': component.dosage,
                 'title': component.chemical_element.title,
                 'img_path': component.chemical_element.img_path,
                 'unit': component.chemical_element.unit
@@ -60,8 +66,79 @@ def cosmetic_composition(request, request_id):
             for component in order_components
         ]
 
-    return render(request, 'order_draft.html', {'data': detailed_cosmetic_order})
+    return render(request, 'order_draft.html', {
+        'data': {
+            'id': cosmetic_order.id,
+            'details': detailed_cosmetic_order,
+            'category': cosmetic_order.category
+        }
+    })
 
 
-def add_component(request, id):
-    pass
+def get_or_create_formulation(user_id):
+    """
+    Получение id косметического средства или создание нового при его отсутствии
+    """
+    old_formulation = CosmeticOrder.objects.filter(
+        user_id=USER, status=CosmeticOrder.STATUS_CHOICES[0][0]).first()
+
+    if old_formulation is not None:
+        return old_formulation.id
+
+    new_formulation = CosmeticOrder(
+        user_id=USER, status=CosmeticOrder.STATUS_CHOICES[0][0])
+    new_formulation.save()
+    return new_formulation.id
+
+
+def add_component(request):
+    """
+    Добавление выбранного компонента в состав косметического средства
+    """
+    if request.method != "POST":
+        return redirect('components')
+
+    data = request.POST
+    component_id = data.get("add_to_basket")
+
+    if component_id is not None:
+        formulation_id = get_or_create_formulation(USER)
+        element = OrderComponent(order_id=formulation_id,
+                                 chemical_element_id=component_id, dosage=0)
+        element.save()
+
+    return components(request)
+
+
+def delete_cosmetic_composition(request_id):
+    """
+    Удаление косметического средства в целом
+    """
+    sql = "UPDATE cosmetic_order SET status = 3 WHERE id =%s"
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, (request_id,))
+
+
+def delete_cosmetic(request, id):
+    """
+    Удаление косметики
+    """
+    if request.method != "POST":
+        return redirect('cosmetic_composition')
+
+    data = request.POST
+    action = data.get("request_action")
+
+    if action == "delete_cosmetic_composition":
+        delete_cosmetic_composition(id)
+        return redirect('components')
+
+    elif action.startswith("delete_component_"):
+        component_id = action.split("_")[2]
+        print(component_id)
+        component = OrderComponent.objects.get(
+            chemical_element_id=component_id)
+        component.delete()
+
+    return cosmetic_composition(request, id)
