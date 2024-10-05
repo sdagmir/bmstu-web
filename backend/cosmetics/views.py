@@ -54,28 +54,29 @@ chemical_elements = [
     }
 ]
 
-cosmetic_order = [
-    {
-        'id': 0,
-        'id_component': 2,
-        'dosage': 100
-    },
-    {
-        'id': 0,
-        'id_component': 1,
-        'dosage': 70
-    },
-    {
-        'id': 0,
-        'id_component': 3,
-        'dosage': 15
-    }
-]
+cosmetic_order = {
+    'id': 0,
+    'name': 'Крем',
+    'components': [
+        {
+            'id_component': 2,
+            'dosage': 100
+        },
+        {
+            'id_component': 1,
+            'dosage': 70
+        },
+        {
+            'id_component': 3,
+            'dosage': 15
+        }
+    ]
+}
 
 
 def components(request):
     # Получаем данные из строки поиска
-    search_query = request.GET.get('q', '').lower()
+    search_query = request.GET.get('component_title', '').lower()
 # Формируем список отфильтрованных элементов по нашему запросу
     filter_elements = [
         element for element in chemical_elements
@@ -103,16 +104,15 @@ def component(request, id):
 def cosmetic_composition(request, id):
     detailed_cosmetic_order = [
         {
-            'id': order['id'],
-            'id_component': order['id_component'],
-            'dosage': order['dosage'],
-            'title': component['title'],
-            'img_path': component['img_path'],
-            'unit': component['unit']
+            'id_component': component['id_component'],
+            'dosage': component['dosage'],
+            'title': chemical_element['title'],
+            'img_path': chemical_element['img_path'],
+            'unit': chemical_element['unit']
         }
-        for order in cosmetic_order
-        for component in chemical_elements
-        if component['id'] == order['id_component']
+        for component in cosmetic_order['components']
+        for chemical_element in chemical_elements
+        if chemical_element['id'] == component['id_component']
     ]
 
     return render(request, 'order_draft.html', {'data': detailed_cosmetic_order})
