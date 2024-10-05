@@ -13,7 +13,7 @@ def components(request):
     Отображение страницы со списком всех компонентов
     """
     # Получаем данные из строки поиска
-    search_query = request.GET.get('q', '').lower()
+    search_query = request.GET.get('component_title', '').lower()
 
     # Получаем заявку пользователя в статусе черновик, если такая существует
     draft_order = CosmeticOrder.objects.filter(
@@ -47,26 +47,29 @@ def cosmetic_composition(request, request_id):
     """
     Отображение страницы косметического средства
     """
+    # Получаем заявку, исключая заявки с удалённым статусом
     cosmetic_order = CosmeticOrder.objects.filter(
         ~Q(status=CosmeticOrder.STATUS_CHOICES[2][0]), id=request_id).first()
 
+    # Если заявка удалена или не найдена, перенаправляем на главную страницу
     if cosmetic_order is None:
-        detailed_cosmetic_order = []
-    else:
-        order_components = OrderComponent.objects.filter(
-            order=cosmetic_order).select_related('chemical_element')
+        return redirect('components')
 
-        detailed_cosmetic_order = [
-            {
-                'id_component': component.chemical_element.id,
-                'title': component.chemical_element.title,
-                'img_path': component.chemical_element.img_path,
-                'unit': component.chemical_element.unit
-            }
-            for component in order_components
-        ]
+    # Если заявка найдена, продолжаем с рендерингом страницы
+    order_components = OrderComponent.objects.filter(
+        order=cosmetic_order).select_related('chemical_element')
 
-    return render(request, 'order_draft.html', {
+    detailed_cosmetic_order = [
+        {
+            'id_component': component.chemical_element.id,
+            'title': component.chemical_element.title,
+            'img_path': component.chemical_element.img_path,
+            'unit': component.chemical_element.unit
+        }
+        for component in order_components
+    ]
+
+    return render(request, 'cosmetic_composition.html', {
         'data': {
             'id': cosmetic_order.id,
             'details': detailed_cosmetic_order,

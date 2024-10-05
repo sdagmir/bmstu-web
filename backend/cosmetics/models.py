@@ -37,13 +37,17 @@ class CosmeticOrder(models.Model):
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE,
-                             verbose_name="Пользователь", related_name="orders")
+                             verbose_name="Пользователь", related_name="created_formulation")
     status = models.IntegerField(
         choices=STATUS_CHOICES, default=1, verbose_name="Статус")
     date_created = models.DateTimeField(
         auto_now_add=True, verbose_name="Дата создания")
     category = models.CharField(
-        max_length=50, verbose_name="Категория косметики", default="")
+        max_length=50, verbose_name="Категория косметики", blank=True, null=True)
+    manager = models.ForeignKey(User, on_delete=models.CASCADE,
+                                verbose_name="Менеджер", related_name="managed_formulation", blank=True, null=True)
+    date_formation = models.DateTimeField(blank=True, null=True)
+    date_completion = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"Заказ №{self.pk} от {self.user.username}"
