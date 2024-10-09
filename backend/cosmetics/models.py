@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 class ChemicalElement(models.Model):
     title = models.CharField(max_length=30, verbose_name="Название")
     img_path = models.CharField(
-        max_length=255, verbose_name="Путь к изображению")
+        max_length=255, verbose_name="Путь к изображению", default="")
     volume = models.IntegerField(verbose_name="Объем")
     unit = models.CharField(max_length=10, verbose_name="Единица измерения")
     price = models.DecimalField(
