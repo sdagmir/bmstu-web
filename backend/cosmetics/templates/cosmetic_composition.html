@@ -10,8 +10,8 @@
 
             <div class="order-details">
                 <!-- Категория стала input text -->
-                <label for="category">Категория:</label>
-                <input type="text" id="category" name="category" value="{{ data.category }}" class="category-input" placeholder="Введите наименование">
+                <label for="category">Название:</label>
+                <input type="text" id="category" name="category" value="{{ data.name }}" class="category-input" placeholder="Введите наименование">
 
                 <div class="order-items">
                     {% for item in data.details %}

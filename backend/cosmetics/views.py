@@ -73,7 +73,7 @@ def cosmetic_composition(request, request_id):
         'data': {
             'id': cosmetic_order.id,
             'details': detailed_cosmetic_order,
-            'category': cosmetic_order.category
+            'name': cosmetic_order.name
         }
     })
 
