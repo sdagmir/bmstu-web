@@ -25,7 +25,7 @@ urlpatterns = [
          name='cosmetic_formulation'),
     path('cosmetic_formulations/<int:pk>/put', views.put_cosmetic_formulation,
          name='cosmetic_formulation_put'),
-    path('cosmetic_formulations/<int:pk>/put', views.form_cosmetic_formulation,
+    path('cosmetic_formulations/<int:pk>/form', views.form_cosmetic_formulation,
          name='cosmetic_formulation_form'),
     path('cosmetic_formulations/<int:pk>/resolve', views.resolve_cosmetic_formulation,
          name='cosmetic_formulation_resolve'),

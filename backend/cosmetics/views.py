@@ -181,15 +181,15 @@ def get_cosmetic_formulation(request, pk):
 @api_view(['PUT'])
 def put_cosmetic_formulation(request, pk):
     """
-    Изменение косметического средства
+    Изменение названия косметического средства
     """
     cosmetic_order = CosmeticOrder.objects.filter(
         id=pk, status=CosmeticOrder.STATUS_CHOICES[0][0]).first()
     if cosmetic_order is None:
         return Response("Косметическое средство не найдено", status=status.HTTP_404_NOT_FOUND)
-
     serializer = PutCosmeticFormulationSerializer(
-        cosmetic_order, data=request.data, partial=True)
+        cosmetic_order, data=request.data, partial=True
+    )
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -207,8 +207,8 @@ def form_cosmetic_formulation(request, pk):
     if cosmetic_order is None:
         return Response("Косметическое средство не найдено", status=status.HTTP_404_NOT_FOUND)
 
-    if cosmetic_order.category is None or cosmetic_order.category == "":
-        return Response("Поле 'Категория' должно быть заполнено", status=status.HTTP_400_BAD_REQUEST)
+    if cosmetic_order.name is None or cosmetic_order.name == "":
+        return Response("Поле 'Название' должно быть заполнено", status=status.HTTP_400_BAD_REQUEST)
 
     if not are_valid_dosages(pk):
         return Response("Необходимо корректно ввести все дозировки химических элементов", status=status.HTTP_400_BAD_REQUEST)
@@ -249,9 +249,8 @@ def resolve_cosmetic_formulation(request, pk):
 
     serializer.save()
 
-    cosmetic_order = CosmeticOrder.objects.filter(pk=pk)
     cosmetic_order.date_completion = datetime.now()
-    cosmetic_order.manager_id = SINGLETON_MANAGER.id
+    cosmetic_order.manager = SINGLETON_MANAGER
     cosmetic_order.save()
 
     serializer = CreatedFormulationsSerializer(cosmetic_order)
@@ -274,12 +273,12 @@ def delete_cosmetic_formulation(request, pk):
 
 
 @api_view(['PUT'])
-def put_chemical_element_in_formulation(request, order_pk, element_pk):
+def put_chemical_element_in_formulation(request, formulation_pk, component_pk):
     """
     Изменение данных о химическом элементе в составе косметического средства
     """
     element_in_order = OrderComponent.objects.filter(
-        order_id=order_pk, chemical_element_id=element_pk).first()
+        order_id=formulation_pk, chemical_element_id=component_pk).first()
     if element_in_order is None:
         return Response("Компнонент косметического средства не найден", status=status.HTTP_404_NOT_FOUND)
 
@@ -287,18 +286,18 @@ def put_chemical_element_in_formulation(request, order_pk, element_pk):
         element_in_order, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
-        return Response(serializer.data)
-    else:
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['DELETE'])
-def delete_chemical_element_in_formulation(request, order_pk, element_pk):
+def delete_chemical_element_in_formulation(request, formulation_pk, component_pk):
     """
     Удаление химического элемента из состава косметического средства
     """
     element_in_formulation = OrderComponent.objects.filter(
-        order_id=order_pk, chemical_element_id=element_pk).first()
+        order_id=formulation_pk, chemical_element_id=component_pk).first()
     if element_in_formulation is None:
         return Response("Компонент не найден", status=status.HTTP_404_NOT_FOUND)
 

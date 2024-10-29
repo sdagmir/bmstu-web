@@ -17,17 +17,18 @@ class ClientSerializer(serializers.ModelSerializer):
 
 
 class CreatedFormulationsSerializer(serializers.ModelSerializer):
-    client = ClientSerializer()
+    user = serializers.CharField(source='user.username')
 
     class Meta:
         model = CosmeticOrder
-        fields = '__all__'
+        fields = ['id', 'user', 'status', 'date_created', 'name',
+                  'date_formation', 'date_completion', 'manager']
 
 
-class OrderComponentSerializer(serializers.ModelField):
+class OrderComponentSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderComponent
-        fields = '__all__'
+        fields = ['dosage']
 
 
 class PutCosmeticFormulationSerializer(serializers.ModelSerializer):
@@ -35,12 +36,12 @@ class PutCosmeticFormulationSerializer(serializers.ModelSerializer):
         model = CosmeticOrder
         fields = '__all__'
         read_only_fields = ["pk", "date_created", "date_formation",
-                            "date_completion", "user", "manager", "status"]
+                            "date_completion", "user", "manager", "status", "components"]
 
 
 class ResolveCosmeticFormulationSerializer(serializers.ModelSerializer):
     def validate(self, data):
-        if data.get('status') not in (2, 3):  # 2 - Завершено, 3 - Отклонено
+        if data.get('status') not in (4, 5):  # 4 - Завершено, 5 - Отклонено
             raise serializers.ValidationError("Invalid status")
         return data
 
@@ -48,7 +49,7 @@ class ResolveCosmeticFormulationSerializer(serializers.ModelSerializer):
         model = CosmeticOrder
         fields = '__all__'
         read_only_fields = ["pk", "date_created", "date_formation",
-                            "date_completion", "user", "manager", "category"]
+                            "date_completion", "user", "manager", "name"]
 
 # Сериализатор для ChemicalElement
 
@@ -71,11 +72,11 @@ class FormulationComponentSerializer(serializers.ModelSerializer):
 
 # Полный сериализатор для заявки (CosmeticOrder)
 class FullCosmeticFormulationSerializer(serializers.ModelSerializer):
-    components = FormulationComponentSerializer(source='components', many=True)
+    components = FormulationComponentSerializer('components', many=True)
 
     class Meta:
         model = CosmeticOrder
-        fields = ['pk', 'date_created', 'status', 'category',
+        fields = ['pk', 'date_created', 'status', 'name',
                   'manager', 'date_formation', 'date_completion', 'components']
 
 
