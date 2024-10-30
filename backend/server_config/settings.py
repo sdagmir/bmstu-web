@@ -40,6 +40,8 @@ INSTALLED_APPS = [
 
     # DRF
     'rest_framework',
+    'rest_framework.authtoken',
+    'drf_yasg',
 
     # Приложение
     'cosmetics',
@@ -139,3 +141,6 @@ AWS_ACCESS_KEY_ID = 'Minio.124'
 AWS_SECRET_ACCESS_KEY = 'Minio.124'
 AWS_STORAGE_BUCKET_NAME = 'web-img'
 MINIO_USE_SSL = False
+
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = 6379

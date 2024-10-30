@@ -1,43 +1,57 @@
 from django.shortcuts import get_object_or_404
 from datetime import datetime
+from dateutil.parser import parse
+import uuid
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework import status
+from django.contrib.auth import authenticate
+from rest_framework.permissions import AllowAny
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from rest_framework.parsers import FormParser
+from rest_framework.decorators import parser_classes
 from cosmetics.models import CosmeticOrder, OrderComponent, ChemicalElement
 from django.db.models import Q
 from cosmetics.serializers import *
 from .minio import add_pic, delete_pic
-
-
-SINGLETON_USER = User(id=1, username="admin")
-SINGLETON_MANAGER = User(id=2, username="manager")
+from .auth import AuthBySessionID, AuthBySessionIDIfExists, IsAuth, IsManagerAuth
+from .redis import session_storage
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
+@authentication_classes([AuthBySessionIDIfExists])
 def get_components_list(request):
     """
     Получение всех химических элементов
     """
-    search_query = request.GET.get('component_title', '').lower()
+    user = request.user
 
-    draft_order = CosmeticOrder.objects.filter(
-        user_id=SINGLETON_USER.id, status=CosmeticOrder.STATUS_CHOICES[0][0]).first()
+    search_query = request.GET.get('component_title', '').lower()
 
     filter_elements = ChemicalElement.objects.filter(
         title__istartswith=search_query)
+
+    items_in_cart = 0
+    draft_order = None
+
+    if user is not None:
+        draft_order = CosmeticOrder.objects.filter(
+            user_id=user.pk, status=CosmeticOrder.STATUS_CHOICES[0][0]).first()
+
+        if draft_order is not None:
+            items_in_cart = draft_order.components.count()
 
     serializer = ComponentSerializer(filter_elements, many=True)
 
     return Response(
         {
             'elements': serializer.data,
-            'count': draft_order.components.count() if draft_order else 0,
+            'count':  items_in_cart,
             'formulation_id': draft_order.id if draft_order else None
         },
         status=status.HTTP_200_OK
@@ -50,6 +64,11 @@ class ChemicalComponent(APIView):
     """
     model_class = ChemicalElement
     serializer_class = ComponentSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsManagerAuth()]
 
     # Возвращает данные о химическом элементе
     def get(self, request, pk, format=None):
@@ -90,6 +109,7 @@ class ChemicalComponent(APIView):
 
 
 @api_view(['POST'])
+@permission_classes([IsManagerAuth])
 def update_element_image(request, pk):
     """
     Добавление или замена изображения для химического элемента по его ID.
@@ -115,6 +135,8 @@ def update_element_image(request, pk):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuth])
+@authentication_classes([AuthBySessionID])
 def post_component_to_formulation(request, pk):
     """
     Добавление компонента в состав косметического средства
@@ -122,7 +144,7 @@ def post_component_to_formulation(request, pk):
     component = ChemicalElement.objects.filter(pk=pk).first
     if component is None:
         return Response("Component not found", status=status.HTTP_404_NOT_FOUND)
-    formulation_id = get_or_create_formulation(SINGLETON_USER.id)
+    formulation_id = get_or_create_formulation(request.user.id)
     data = OrderComponent(order_id=formulation_id, chemical_element_id=pk)
     data.save()
     return Response(status=status.HTTP_200_OK)
@@ -145,25 +167,43 @@ def get_or_create_formulation(user_id):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuth])
+@authentication_classes([AuthBySessionID])
 def get_created_formulations(request):
     """
     Получение списка сформированных косметических средств
     """
     status_filter = request.query_params.get("status")
+    formation_datetime_start_filter = request.query_params.get(
+        "formation_start")
+    formation_datetime_end_filter = request.query_params.get("formation_end")
 
-    filters = ~Q(status=CosmeticOrder.STATUS_CHOICES[2][0])
+    filters = ~Q(status=CosmeticOrder.STATUS_CHOICES[2][0]) & ~Q(
+        status=CosmeticOrder.STATUS_CHOICES[0][0])
+
     if status_filter is not None:
         filters &= Q(status=status_filter.upper())
 
+    if formation_datetime_start_filter is not None:
+        filters &= Q(date_formation__gte=parse(
+            formation_datetime_start_filter))
+
+    if formation_datetime_end_filter is not None:
+        filters &= Q(date_formation__lte=parse(formation_datetime_end_filter))
+
+    if not request.user.is_staff:
+        filters &= Q(user=request.user)
+
     created_formulations = CosmeticOrder.objects.filter(
         filters).select_related("user")
-    serializer = CreatedFormulationsSerializer(
-        created_formulations, many=True)
+    serializer = CreatedFormulationsSerializer(created_formulations, many=True)
 
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
+@permission_classes([IsAuth])
+@authentication_classes([AuthBySessionID])
 def get_cosmetic_formulation(request, pk):
     """
     Получение информации о косметическом средстве по его ID
@@ -179,6 +219,8 @@ def get_cosmetic_formulation(request, pk):
 
 
 @api_view(['PUT'])
+@permission_classes([IsAuth])
+@authentication_classes([AuthBySessionID])
 def put_cosmetic_formulation(request, pk):
     """
     Изменение названия косметического средства
@@ -198,6 +240,8 @@ def put_cosmetic_formulation(request, pk):
 
 
 @api_view(['PUT'])
+@permission_classes([IsAuth])
+@authentication_classes([AuthBySessionID])
 def form_cosmetic_formulation(request, pk):
     """
     Формирование косметического средства
@@ -233,6 +277,8 @@ def are_valid_dosages(order_id):
 
 
 @api_view(['PUT'])
+@permission_classes([IsManagerAuth])
+@authentication_classes([AuthBySessionID])
 def resolve_cosmetic_formulation(request, pk):
     """
     Закрытие заявки на косметическое средство модератором
@@ -250,7 +296,7 @@ def resolve_cosmetic_formulation(request, pk):
     serializer.save()
 
     cosmetic_order.date_completion = datetime.now()
-    cosmetic_order.manager = SINGLETON_MANAGER
+    cosmetic_order.manager = request.user
     cosmetic_order.save()
 
     serializer = CreatedFormulationsSerializer(cosmetic_order)
@@ -258,6 +304,8 @@ def resolve_cosmetic_formulation(request, pk):
 
 
 @api_view(['DELETE'])
+@permission_classes([IsAuth])
+@authentication_classes([AuthBySessionID])
 def delete_cosmetic_formulation(request, pk):
     """
     Удаление косметического средства
@@ -273,6 +321,8 @@ def delete_cosmetic_formulation(request, pk):
 
 
 @api_view(['PUT'])
+@permission_classes([IsAuth])
+@authentication_classes([AuthBySessionID])
 def put_chemical_element_in_formulation(request, formulation_pk, component_pk):
     """
     Изменение данных о химическом элементе в составе косметического средства
@@ -292,6 +342,8 @@ def put_chemical_element_in_formulation(request, formulation_pk, component_pk):
 
 
 @api_view(['DELETE'])
+@permission_classes([IsAuth])
+@authentication_classes([AuthBySessionID])
 def delete_chemical_element_in_formulation(request, formulation_pk, component_pk):
     """
     Удаление химического элемента из состава косметического средства
@@ -305,7 +357,14 @@ def delete_chemical_element_in_formulation(request, formulation_pk, component_pk
     return Response(status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(method='post',
+                     request_body=UserSerializer,
+                     responses={
+                         status.HTTP_201_CREATED: "Created",
+                         status.HTTP_400_BAD_REQUEST: "Bad Request",
+                     })
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def create_user(request):
     """
     Создание пользователя
@@ -317,7 +376,26 @@ def create_user(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@swagger_auto_schema(method='post',
+                     responses={
+                         status.HTTP_200_OK: "OK",
+                         status.HTTP_400_BAD_REQUEST: "Bad Request",
+                     },
+                     manual_parameters=[
+                         openapi.Parameter('username',
+                                           type=openapi.TYPE_STRING,
+                                           description='username',
+                                           in_=openapi.IN_FORM,
+                                           required=True),
+                         openapi.Parameter('password',
+                                           type=openapi.TYPE_STRING,
+                                           description='password',
+                                           in_=openapi.IN_FORM,
+                                           required=True)
+                     ])
 @api_view(['POST'])
+@parser_classes((FormParser,))
+@permission_classes([AllowAny])
 def login_user(request):
     """
     Вход
@@ -326,31 +404,48 @@ def login_user(request):
     password = request.POST.get('password')
     user = authenticate(username=username, password=password)
     if user is not None:
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key}, status=status.HTTP_200_OK)
+        session_id = str(uuid.uuid4())
+        session_storage.set(session_id, username)
+        response = Response(status=status.HTTP_201_CREATED)
+        response.set_cookie("session_id", session_id, samesite="lax")
+        return response
     return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@swagger_auto_schema(method='post',
+                     responses={
+                         status.HTTP_204_NO_CONTENT: "No content",
+                         status.HTTP_403_FORBIDDEN: "Forbidden",
+                     })
 @api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuth])
 def logout_user(request):
     """
     Выход
     """
-    request.auth.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
+    session_id = request.COOKIES["session_id"]
+    if session_storage.exists(session_id):
+        session_storage.delete(session_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    return Response(status=status.HTTP_403_FORBIDDEN)
 
 
+@swagger_auto_schema(method='put',
+                     request_body=UserSerializer,
+                     responses={
+                         status.HTTP_200_OK: UserSerializer(),
+                         status.HTTP_400_BAD_REQUEST: "Bad Request",
+                         status.HTTP_403_FORBIDDEN: "Forbidden",
+                     })
 @api_view(['PUT'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuth])
+@authentication_classes([AuthBySessionID])
 def update_user(request):
     """
     Обновление данных пользователя
     """
-    user = request.user
-    serializer = UserSerializer(user, data=request.data, partial=True)
+    serializer = UserSerializer(request.user, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)

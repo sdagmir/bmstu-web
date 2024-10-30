@@ -95,6 +95,12 @@ services:
     depends_on:
       - postgres
 
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
 ## По умолчанию в этой конфигурации используется локальный драйвер docker по умолчанию,
 ## Для пользовательских томов замените на конфигурацию драйвера тома.
 volumes:
@@ -109,3 +115,4 @@ volumes:
 
   postgres:
   pgadmin:
+  redisdata:
