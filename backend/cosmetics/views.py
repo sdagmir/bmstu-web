@@ -400,15 +400,23 @@ def login_user(request):
     """
     Вход
     """
+    # Получаем текущий session_id из куки
+    session_id = request.COOKIES.get("session_id")
+    # Если существует текущий session_id, завершаем предыдущую сессию
+    if session_id and session_storage.exists(session_id):
+        session_storage.delete(session_id)
+    # Аутентификация пользователя
     username = request.POST.get('username')
     password = request.POST.get('password')
     user = authenticate(username=username, password=password)
     if user is not None:
+        # Создаем новый session_id
         session_id = str(uuid.uuid4())
         session_storage.set(session_id, username)
         response = Response(status=status.HTTP_201_CREATED)
         response.set_cookie("session_id", session_id, samesite="lax")
         return response
+    # Возвращаем ошибку, если учетные данные неверны
     return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
 

@@ -58,7 +58,7 @@ class ChemicalElementSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChemicalElement
         fields = ['pk', 'title', 'img_path', 'volume', 'unit',
-                  'price', 'short_description', 'description']
+                  'price']
 
 
 # Сериализатор для компонента в заявке (OrderComponent)
