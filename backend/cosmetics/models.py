@@ -35,23 +35,31 @@ class CosmeticOrder(models.Model):
         (5, 'Отклонено'),
     )
 
-    user = models.ForeignKey(User, on_delete=models.SET_NULL,
-                             null=True, blank=True,
-                             verbose_name="Пользователь", related_name="created_formulation")
+    formulation_chemist = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name="Химик-аналитик", related_name="created_formulations"
+    )
     status = models.IntegerField(
         choices=STATUS_CHOICES, default=1, verbose_name="Статус")
     date_created = models.DateTimeField(
         auto_now_add=True, verbose_name="Дата создания")
     name = models.CharField(
         max_length=50, verbose_name="Название косметики", blank=True, null=True)
-    manager = models.ForeignKey(User, on_delete=models.SET_NULL,
-                                null=True, blank=True,
-                                verbose_name="Менеджер", related_name="managed_formulation")
+    technologist = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name="Технолог", related_name="managed_formulations"
+    )
     date_formation = models.DateTimeField(blank=True, null=True)
     date_completion = models.DateTimeField(blank=True, null=True)
+    adverse_effects_count = models.IntegerField(
+        verbose_name="Количество побочных эффектов",
+        blank=True, null=True
+    )
 
     def __str__(self):
-        return f"Заказ №{self.pk} от {self.user.username if self.user else 'Удалённый пользователь'}"
+        return f"Заказ №{self.pk} от {self.formulation_chemist.username if self.formulation_chemist else 'Удалённый пользователь'}"
 
     class Meta:
         verbose_name = "Косметическая заявка"

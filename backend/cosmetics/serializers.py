@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-
 from .models import CosmeticOrder, OrderComponent, ChemicalElement
 
 
@@ -17,12 +16,17 @@ class ClientSerializer(serializers.ModelSerializer):
 
 
 class CreatedFormulationsSerializer(serializers.ModelSerializer):
-    user = serializers.CharField(source='user.username')
+    formulation_chemist = serializers.CharField(
+        source='formulation_chemist.username')
+    technologist = serializers.CharField(
+        source='technologist.username', allow_null=True)
 
     class Meta:
         model = CosmeticOrder
-        fields = ['id', 'user', 'status', 'date_created', 'name',
-                  'date_formation', 'date_completion', 'manager']
+        fields = [
+            'id', 'formulation_chemist', 'technologist', 'status', 'date_created', 'name',
+            'date_formation', 'date_completion'
+        ]
 
 
 class OrderComponentSerializer(serializers.ModelSerializer):
@@ -35,8 +39,10 @@ class PutCosmeticFormulationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CosmeticOrder
         fields = '__all__'
-        read_only_fields = ["pk", "date_created", "date_formation",
-                            "date_completion", "user", "manager", "status", "components"]
+        read_only_fields = [
+            "pk", "date_created", "date_formation", "date_completion",
+            "formulation_chemist", "technologist", "status", "components"
+        ]
 
 
 class ResolveCosmeticFormulationSerializer(serializers.ModelSerializer):
@@ -48,20 +54,18 @@ class ResolveCosmeticFormulationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CosmeticOrder
         fields = '__all__'
-        read_only_fields = ["pk", "date_created", "date_formation",
-                            "date_completion", "user", "manager", "name"]
-
-# Сериализатор для ChemicalElement
+        read_only_fields = [
+            "pk", "date_created", "date_formation", "date_completion",
+            "formulation_chemist", "technologist", "name", "adverse_effects_count"
+        ]
 
 
 class ChemicalElementSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChemicalElement
-        fields = ['pk', 'title', 'img_path', 'volume', 'unit',
-                  'price']
+        fields = ['pk', 'title', 'img_path', 'volume', 'unit', 'price']
 
 
-# Сериализатор для компонента в заявке (OrderComponent)
 class FormulationComponentSerializer(serializers.ModelSerializer):
     chemical_element = ChemicalElementSerializer()
 
@@ -70,14 +74,19 @@ class FormulationComponentSerializer(serializers.ModelSerializer):
         fields = ['chemical_element', 'dosage']
 
 
-# Полный сериализатор для заявки (CosmeticOrder)
 class FullCosmeticFormulationSerializer(serializers.ModelSerializer):
-    components = FormulationComponentSerializer('components', many=True)
+    components = FormulationComponentSerializer(many=True)
+    formulation_chemist = serializers.CharField(
+        source='formulation_chemist.username')
+    technologist = serializers.CharField(
+        source='technologist.username', allow_null=True)
 
     class Meta:
         model = CosmeticOrder
-        fields = ['pk', 'date_created', 'status', 'name',
-                  'manager', 'date_formation', 'date_completion', 'components']
+        fields = [
+            'pk', 'formulation_chemist', 'technologist', 'date_created', 'status', 'name',
+            'date_formation', 'date_completion', 'adverse_effects_count', 'components'
+        ]
 
 
 class UserSerializer(serializers.ModelSerializer):

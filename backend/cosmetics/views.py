@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from datetime import datetime
 from dateutil.parser import parse
 import uuid
+import random
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -31,7 +32,7 @@ def get_components_list(request):
     """
     user = request.user
 
-    search_query = request.GET.get('component_title', '').lower()
+    search_query = request.GET.get('title', '').lower()
 
     filter_elements = ChemicalElement.objects.filter(
         title__istartswith=search_query)
@@ -41,7 +42,7 @@ def get_components_list(request):
 
     if user is not None:
         draft_order = CosmeticOrder.objects.filter(
-            user_id=user.pk, status=CosmeticOrder.STATUS_CHOICES[0][0]).first()
+            formulation_chemist_id=user.pk, status=CosmeticOrder.STATUS_CHOICES[0][0]).first()
 
         if draft_order is not None:
             items_in_cart = draft_order.components.count()
@@ -88,7 +89,7 @@ class ChemicalComponent(APIView):
     def put(self, request, pk, format=None):
         element = self.model_class.objects.filter(pk=pk).first()
         if element is None:
-            return Response("Chemical element not found", status=status.HTTP_404_NOT_FOUND)
+            return Response("Химический элемент не найден", status=status.HTTP_404_NOT_FOUND)
         serializer = self.serializer_class(
             element, data=request.data, partial=True)
         if serializer.is_valid():
@@ -141,27 +142,30 @@ def post_component_to_formulation(request, pk):
     """
     Добавление компонента в состав косметического средства
     """
-    component = ChemicalElement.objects.filter(pk=pk).first
+    component = ChemicalElement.objects.filter(pk=pk).first()
     if component is None:
-        return Response("Component not found", status=status.HTTP_404_NOT_FOUND)
+        return Response("Химический элемент не найден", status=status.HTTP_404_NOT_FOUND)
+
     formulation_id = get_or_create_formulation(request.user.id)
     data = OrderComponent(order_id=formulation_id, chemical_element_id=pk)
     data.save()
     return Response(status=status.HTTP_200_OK)
 
 
-def get_or_create_formulation(user_id):
+def get_or_create_formulation(chemist_id):
     """
     Получение id косметического средства или создание нового при его отсутствии
     """
     old_formulation = CosmeticOrder.objects.filter(
-        user_id=user_id, status=CosmeticOrder.STATUS_CHOICES[0][0]).first()
+        formulation_chemist_id=chemist_id, status=CosmeticOrder.STATUS_CHOICES[0][0]
+    ).first()
 
-    if old_formulation is not None:
+    if old_formulation:
         return old_formulation.id
 
     new_formulation = CosmeticOrder(
-        user_id=user_id, status=CosmeticOrder.STATUS_CHOICES[0][0])
+        formulation_chemist_id=chemist_id, status=CosmeticOrder.STATUS_CHOICES[0][0]
+    )
     new_formulation.save()
     return new_formulation.id
 
@@ -192,10 +196,11 @@ def get_created_formulations(request):
         filters &= Q(date_formation__lte=parse(formation_datetime_end_filter))
 
     if not request.user.is_staff:
-        filters &= Q(user=request.user)
+        filters &= Q(formulation_chemist=request.user)
 
     created_formulations = CosmeticOrder.objects.filter(
-        filters).select_related("user")
+        filters).select_related("formulation_chemist")
+
     serializer = CreatedFormulationsSerializer(created_formulations, many=True)
 
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -212,7 +217,7 @@ def get_cosmetic_formulation(request, pk):
     cosmetic_order = CosmeticOrder.objects.filter(filters).first()
 
     if cosmetic_order is None:
-        return Response("CosmeticOrder not found", status=status.HTTP_404_NOT_FOUND)
+        return Response("Косметическое средство не найдедно", status=status.HTTP_404_NOT_FOUND)
 
     serializer = FullCosmeticFormulationSerializer(cosmetic_order)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -281,26 +286,40 @@ def are_valid_dosages(order_id):
 @authentication_classes([AuthBySessionID])
 def resolve_cosmetic_formulation(request, pk):
     """
-    Закрытие заявки на косметическое средство модератором
+    Закрытие заявки на косметическое средство технологом
     """
     cosmetic_order = CosmeticOrder.objects.filter(
-        pk=pk, status=2).first()  # 2 - Сформировано
+        pk=pk, status=2  # 2 - Сформировано
+    ).first()
     if cosmetic_order is None:
-        return Response("Косметическое средство не найдено или статус неверный", status=status.HTTP_404_NOT_FOUND)
+        return Response("Сформированное косметическое средство не найдено", status=status.HTTP_404_NOT_FOUND)
 
     serializer = ResolveCosmeticFormulationSerializer(
-        cosmetic_order, data=request.data, partial=True)
+        cosmetic_order, data=request.data, partial=True
+    )
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # Сохраняем изменения
     serializer.save()
 
+    # Рассчитываем количество побочных эффектов
+    adverse_effects_count = calculate_adverse_effects()
+    cosmetic_order.adverse_effects_count = adverse_effects_count
+
     cosmetic_order.date_completion = datetime.now()
-    cosmetic_order.manager = request.user
+    cosmetic_order.technologist = request.user  # Текущий пользователь - технолог
     cosmetic_order.save()
 
     serializer = CreatedFormulationsSerializer(cosmetic_order)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+def calculate_adverse_effects():
+    """
+    Вычисляет количество возможных побочных эффектов.
+    """
+    return random.randint(0, 8)
 
 
 @api_view(['DELETE'])
@@ -313,7 +332,7 @@ def delete_cosmetic_formulation(request, pk):
     cosmetic_order = CosmeticOrder.objects.filter(id=pk,
                                                   status=1).first()
     if cosmetic_order is None:
-        return Response("CosmeticOrder not found", status=status.HTTP_404_NOT_FOUND)
+        return Response("Косметическое средство не найдено", status=status.HTTP_404_NOT_FOUND)
 
     cosmetic_order.status = 3
     cosmetic_order.save()
@@ -358,18 +377,43 @@ def delete_chemical_element_in_formulation(request, formulation_pk, component_pk
 
 
 @swagger_auto_schema(method='post',
-                     request_body=UserSerializer,
                      responses={
                          status.HTTP_201_CREATED: "Created",
                          status.HTTP_400_BAD_REQUEST: "Bad Request",
-                     })
+                     },
+                     manual_parameters=[
+                         openapi.Parameter('username',
+                                           type=openapi.TYPE_STRING,
+                                           description='Username',
+                                           in_=openapi.IN_FORM,
+                                           required=True),
+                         openapi.Parameter('email',
+                                           type=openapi.TYPE_STRING,
+                                           description='Email',
+                                           in_=openapi.IN_FORM,
+                                           required=True),
+                         openapi.Parameter('password',
+                                           type=openapi.TYPE_STRING,
+                                           description='Password',
+                                           in_=openapi.IN_FORM,
+                                           required=True)
+                     ])
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@parser_classes([FormParser])
 def create_user(request):
     """
     Создание пользователя
     """
-    serializer = UserSerializer(data=request.data)
+    username = request.POST.get('username')
+    email = request.POST.get('email')
+    password = request.POST.get('password')
+
+    if not username or not password:
+        return Response({'error': 'Поля username и password обязательные!'}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = UserSerializer(
+        data={'username': username, 'email': email, 'password': password})
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
