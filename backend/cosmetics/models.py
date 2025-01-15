@@ -53,7 +53,7 @@ class CosmeticOrder(models.Model):
     )
     date_formation = models.DateTimeField(blank=True, null=True)
     date_completion = models.DateTimeField(blank=True, null=True)
-    adverse_effects_count = models.IntegerField(
+    adverse_effects_count = models.FloatField(
         verbose_name="Количество побочных эффектов",
         blank=True, null=True
     )

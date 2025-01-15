@@ -28,7 +28,7 @@ urlpatterns = [
     path('component', views.get_components_list, name='components_list'),
     path('component/', views.ChemicalComponent.as_view(),
          name='component_post'),
-    path('component/<int:pk>/', views.ChemicalComponent.as_view(),
+    path('component/<int:pk>', views.ChemicalComponent.as_view(),
          name='chemical_component_detail'),
     path('component/<int:pk>/add', views.post_component_to_formulation,
          name='post_component_to_formulation'),

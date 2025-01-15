@@ -25,7 +25,7 @@ class CreatedFormulationsSerializer(serializers.ModelSerializer):
         model = CosmeticOrder
         fields = [
             'id', 'formulation_chemist', 'technologist', 'status', 'date_created', 'name',
-            'date_formation', 'date_completion'
+            'date_formation', 'date_completion', 'adverse_effects_count'
         ]
 
 

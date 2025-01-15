@@ -31,6 +31,8 @@ services:
   minio1:
     <<: *minio-common
     hostname: minio1 # указываем что адрес внутри подсети docker будет http://minio1:9000/ и на порту 9001 для админки соотвественно
+    environment:
+      MINIO_SERVER_URL: http://0.0.0.0:9000
     volumes: # куда физически переадресовать* память(в какие разделы) из виртуальной(в докере) на вашу машину. по сути это работает как хард линк на файл/папку
       - data1-1:/data1
       - data1-2:/data2
@@ -38,6 +40,8 @@ services:
   minio2: # аналогично ставим 2-4 ноды
     <<: *minio-common
     hostname: minio2
+    environment:
+      MINIO_SERVER_URL: http://0.0.0.0:9000
     volumes:
       - data2-1:/data1
       - data2-2:/data2
@@ -45,6 +49,8 @@ services:
   minio3:
     <<: *minio-common
     hostname: minio3
+    environment:
+      MINIO_SERVER_URL: http://0.0.0.0:9000
     volumes:
       - data3-1:/data1
       - data3-2:/data2
@@ -52,6 +58,8 @@ services:
   minio4:
     <<: *minio-common
     hostname: minio4
+    environment:
+      MINIO_SERVER_URL: http://0.0.0.0:9000
     volumes:
       - data4-1:/data1
       - data4-2:/data2
@@ -78,7 +86,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres:/var/lib/postgresql/data
 

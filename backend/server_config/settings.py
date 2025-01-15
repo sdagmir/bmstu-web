@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-*ws#8l6ky5pz)@q-tb_f=y71%ei&dsg(6oa2mjp+-o924&8(4i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -88,7 +88,7 @@ DATABASES = {
         'USER': 'postgres',
         'PASSWORD': 'postgres',
         'HOST': 'localhost',
-        'PORT': 5432,
+        'PORT': 5433,
     }
 }
 
@@ -136,7 +136,7 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AWS_S3_ENDPOINT_URL = 'localhost:9000'
+AWS_S3_ENDPOINT_URL = '0.0.0.0:9000'
 AWS_ACCESS_KEY_ID = 'Minio.124'
 AWS_SECRET_ACCESS_KEY = 'Minio.124'
 AWS_STORAGE_BUCKET_NAME = 'web-img'
