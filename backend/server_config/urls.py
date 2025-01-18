@@ -49,6 +49,8 @@ urlpatterns = [
          name='cosmetic_formulation_resolve'),
     path('cosmetic_formulations/<int:pk>/delete', views.delete_cosmetic_formulation,
          name='cosmetic_formulation_delete'),
+    path('update_adverse_effects/', views.update_adverse_effects,
+         name='update_adverse_effects'),
 
     #################################################
 

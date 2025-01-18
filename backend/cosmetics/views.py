@@ -22,6 +22,9 @@ from cosmetics.serializers import *
 from .minio import add_pic, delete_pic
 from .auth import AuthBySessionID, AuthBySessionIDIfExists, IsAuth, IsManagerAuth
 from .redis import session_storage
+import requests
+
+ASYNC_SERVICE_URL = "http://localhost:8081/calculate"
 
 
 @swagger_auto_schema(
@@ -104,9 +107,12 @@ def get_components_list(request):
     page_size = int(request.GET.get('page_size', 30))
 
     search_query = request.GET.get('title', '')
-    filter_elements = ChemicalElement.objects.filter(
-        title=search_query
-    )
+    if not search_query:
+        filter_elements = ChemicalElement.objects.all()
+    else:
+        filter_elements = ChemicalElement.objects.filter(
+            title=search_query
+        )
 
     total_count = filter_elements.count()
 
@@ -473,43 +479,57 @@ def are_valid_dosages(order_id):
 @permission_classes([IsManagerAuth])
 @authentication_classes([AuthBySessionID])
 def resolve_cosmetic_formulation(request, pk):
-    """
-    Закрытие заявки на косметическое средство технологом.
-    """
-    cosmetic_order = CosmeticOrder.objects.filter(
-        pk=pk, status=2).first()  # 2 - Сформировано
+    cosmetic_order = CosmeticOrder.objects.filter(pk=pk, status=2).first()
     if not cosmetic_order:
         return Response("Сформированное косметическое средство не найдено", status=status.HTTP_404_NOT_FOUND)
 
     serializer = ResolveCosmeticFormulationSerializer(
-        cosmetic_order, data=request.data, partial=True)
+        cosmetic_order, data=request.data, partial=True
+    )
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # Сохраняем изменения
     serializer.save()
 
-    # Рассчитываем количество побочных эффектов
-    adverse_effects_count = calculate_adverse_effects()
-    cosmetic_order.adverse_effects_count = adverse_effects_count
+    response = requests.post(
+        ASYNC_SERVICE_URL,
+        json={"order_id": cosmetic_order.id},
+    )
+
+    if response.status_code != 200:
+        return Response("Ошибка асинхронного сервиса", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     cosmetic_order.date_completion = datetime.now()
-    cosmetic_order.technologist = request.user  # Текущий пользователь - технолог
+    cosmetic_order.technologist = request.user
     cosmetic_order.save()
 
     serializer = CreatedFormulationsSerializer(cosmetic_order)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-def calculate_adverse_effects():
-    """
-    Вычисляет вероятность побочных эффектов в виде дроби.
-    """
-    exponent = random.randint(-8, -1)
-    return 10 ** exponent
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def update_adverse_effects(request):
+    order_id = request.data.get("order_id")
+    adverse_effects_count = request.data.get("adverse_effects_count")
+
+    if not order_id or adverse_effects_count is None:
+        return Response("Неверные данные", status=status.HTTP_400_BAD_REQUEST)
+
+    cosmetic_order = CosmeticOrder.objects.filter(id=order_id).first()
+    if not cosmetic_order:
+        return Response("Косметическое средство не найдено", status=status.HTTP_404_NOT_FOUND)
+
+    if cosmetic_order.status == 5:  # Статус "отклонено"
+        cosmetic_order.adverse_effects_count = 0
+        message = "Заявка отклонена, коэффициент побочных эффектов установлен в 0."
+    else:
+        cosmetic_order.adverse_effects_count = adverse_effects_count
+        message = "Успешное обновление коэффициента побочных эффектов."
+    cosmetic_order.save()
+    return Response({"message": message})
 
 
-# Удаление косметического средства
 @swagger_auto_schema(
     method='delete',
     operation_summary="Удаление косметического средства",
@@ -630,7 +650,7 @@ def delete_chemical_element_in_formulation(request, formulation_pk, component_pk
 )
 @api_view(['POST'])
 @permission_classes([AllowAny])
-@parser_classes([JSONParser, FormParser])
+@parser_classes([FormParser])
 def create_user(request):
     """
     Создание пользователя
